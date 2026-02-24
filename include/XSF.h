@@ -115,15 +115,14 @@ namespace XSF {
 	};
 	struct XSF_Event {
 		XSF_EventType type = XSF_EVENT_NONE;
-		struct XSF_Window window;
 		XSF_Key key = XSF_KEY_NONE;
 		XSF_MouseButton mouse = XSF_MOUSE_NONE;
 		int mousex = 0;
 		int mousey = 0;
 		MSG msg = { 0 };
+		HWND hwnd = nullptr;
 	};
 	LRESULT CALLBACK XSF_WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	void XSF_Event_Init(XSF_Window& window);
 	bool XSF_PollEvent(struct XSF_Event& event);
 	void XSF_DrawRect(int x1, int y1, int x2, int y2,struct XSF_Window& window);
 	void XSF_DrawSolidRect(int x1, int y1, int x2, int y2, struct XSF_Window& window);

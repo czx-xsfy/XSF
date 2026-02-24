@@ -38,6 +38,7 @@ namespace XSF {
 	struct XSF_Event g_event;
 	LRESULT CALLBACK XSF_WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
+		g_event.hwnd = hWnd;
 		switch (msg)
 		{
 		case WM_LBUTTONDOWN:
@@ -557,6 +558,7 @@ namespace XSF {
 				break;
 		case WM_CLOSE:
 			g_event.type = XSF_EVENT_CLOSE;
+			break;
 		case WM_DESTROY:
 			PostQuitMessage(0);
 			break;
@@ -564,21 +566,21 @@ namespace XSF {
 			ValidateRect(hWnd, NULL);
 			break;
 		default:
-			return DefWindowProc(hWnd, msg, wParam, lParam);
+			break;
 		}
-	}
-	void XSF_Event_Init(XSF_Window& window) {
-		g_event.window = window;
+		return DefWindowProc(hWnd, msg, wParam, lParam);
 	}
 	bool XSF_PollEvent(struct XSF_Event& event) {
 		g_event.type = XSF_EventType::XSF_EVENT_NONE;
 		g_event.key = XSF_Key::XSF_KEY_NONE;
 		g_event.mouse = XSF_MouseButton::XSF_MOUSE_NONE;
-		if (GetMessage(&g_event.msg, NULL, 0, 0)) {
-			TranslateMessage(&g_event.msg);
-			DispatchMessage(&g_event.msg);
+		if (PeekMessage(&g_event.msg, NULL, 0, 0,PM_REMOVE)) {
+			if (g_event.msg.message != WM_QUIT) {
+				TranslateMessage(&g_event.msg);
+				DispatchMessage(&g_event.msg);
+			}
 		}
-		if (g_event.type != XSF_EventType::XSF_EVENT_NONE && g_event.window.hwnd != nullptr) {
+		if (g_event.type != XSF_EventType::XSF_EVENT_NONE && g_event.hwnd != nullptr) {
 			event = g_event;
 			return true;
 		}

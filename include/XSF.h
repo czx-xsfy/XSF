@@ -1,8 +1,11 @@
 #pragma once
+#include <wincodec.h>
 #include <string>
 #include<Windows.h>
 #include <mmsystem.h>
+#include <d2d1.h>
 #pragma comment(lib, "winmm.lib")
+#pragma comment(lib, "d2d1.lib")
 namespace XSF {
 	struct XSF_Window
 	{
@@ -122,6 +125,15 @@ namespace XSF {
 		MSG msg = { 0 };
 		HWND hwnd = nullptr;
 	};
+	struct XSF_Image {
+		IWICBitmap* Bitmap = nullptr;
+		float width = 0;
+		float height = 0;
+	};
+	struct XSF_Render {
+		ID2D1Factory* Factory = nullptr;
+		ID2D1HwndRenderTarget* RT = nullptr;
+	};
 	LRESULT CALLBACK XSF_WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	bool XSF_PollEvent(struct XSF_Event& event);
 	void XSF_DrawRect(int x1, int y1, int x2, int y2,struct XSF_Window& window);
@@ -134,13 +146,16 @@ namespace XSF {
 	void XSF_DrawSolidEllipse(int x, int y, int rx, int ry, XSF_Window& window);
 	void XSF_DrawPolygon(POINT* points, int n, struct XSF_Window& window);
 	void XSF_DrawSolidPolygon(POINT* points, int n, struct XSF_Window& window);
-	HBITMAP XSF_LoadBMP(const WCHAR* fp,int x,int y);
-	void XSF_DrawBMP(struct XSF_Window& window, HBITMAP hBmp, int x, int y);
+	void XSF_LoadImage(const WCHAR* fp, float width, float height, XSF_Image& Image);
+	void XSF_DrawImage(XSF_Image Image, float x, float y, XSF_Render& render);
 	void XSF_SetColor(COLORREF color);
-	void XSF_UnLoadBMP(HBITMAP hBmp[], int s);
+	void XSF_UnLoadImage(XSF_Image& Image);
 	void XSF_PlayWAV(const WCHAR* fp, bool l);
 	void XSF_StopSound();
 	void XSF_DrawText(const WCHAR* text, int x, int y, struct XSF_Window& window);
 	void XSF_DoubleBufferBegin(struct XSF_Window& window);
 	void XSF_DoubleBufferFlip(struct XSF_Window& window);
+	void XSF_Init(); 
+	void XSF_UnInit();
+	void XSF_Render_Init(XSF_Window window, XSF_Render& render);
 }

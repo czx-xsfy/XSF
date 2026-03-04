@@ -2,6 +2,7 @@
 #include "framework.h"
 #include "XSF.h"
 namespace XSF {
+	IWICImagingFactory* g_WIC_factory = nullptr;
 	COLORREF g_DCR = RGB(0, 0, 0);
 	void XSF_Window_Init() {
 		WNDCLASS windowc = { 0 };
@@ -14,7 +15,7 @@ namespace XSF {
 		window.length = length;
 		window.height = height;
 		window.name = name;
-		window.hwnd = CreateWindowEx(0, L"WindowC", window.name.c_str(), WS_OVERLAPPEDWINDOW, 50, 50, 50 + window.length, 50 + window.height, NULL, NULL, GetModuleHandle(NULL), NULL);
+		window.hwnd = CreateWindowEx(0, L"WindowC", window.name.c_str(), WS_OVERLAPPEDWINDOW, 50, 50, window.length, window.height, NULL, NULL, GetModuleHandle(NULL), NULL);
 		ShowWindow(window.hwnd, SW_SHOW);
 		UpdateWindow(window.hwnd);
 	}
@@ -34,6 +35,44 @@ namespace XSF {
 			DeleteDC(window.hMemDC);
 		}
 		DestroyWindow(window.hwnd);
+	}
+	void XSF_Init() {
+		CoInitialize(NULL);
+		CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&g_WIC_factory));
+	}
+	void XSF_Render_Init(XSF_Window window, XSF_Render& render) {
+		D2D1CreateFactory(
+			D2D1_FACTORY_TYPE_SINGLE_THREADED,
+			&render.Factory
+		);
+		RECT rc;
+		GetClientRect(window.hwnd, &rc);
+		render.Factory->CreateHwndRenderTarget(
+			D2D1::RenderTargetProperties(),
+			D2D1::HwndRenderTargetProperties(
+				window.hwnd,
+				D2D1::SizeU(
+					rc.right - rc.left,
+					rc.bottom - rc.top)
+			),
+			&render.RT
+		);
+	}
+	void XSF_UnInit() {
+		if (g_WIC_factory != nullptr) {
+			g_WIC_factory->Release();
+			g_WIC_factory = nullptr;
+		}
+	}
+	void XSF_Render_UnInit(XSF_Render& render) {
+		if (render.RT != nullptr) {
+			render.RT->Release();
+			render.RT = nullptr;
+		}
+		if (render.Factory != nullptr) {
+			render.Factory->Release();
+			render.Factory = nullptr;
+		}
 	}
 	struct XSF_Event g_event;
 	LRESULT CALLBACK XSF_WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -735,36 +774,64 @@ namespace XSF {
 			}
 		}
 	}
-	HBITMAP XSF_LoadBMP(const WCHAR* fp,int x,int y) {
-		HBITMAP hBmp = (HBITMAP)LoadImage(NULL,fp,IMAGE_BITMAP,x,y,LR_LOADFROMFILE | LR_CREATEDIBSECTION);
-		return hBmp;
+	void XSF_LoadImage(const WCHAR* fp,float width,float height,XSF_Image& Image) {
+		IWICBitmapDecoder* I_Decoder = nullptr;
+		IWICBitmapFrameDecode* I_Frame = nullptr;
+		g_WIC_factory->CreateDecoderFromFilename(fp, NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &I_Decoder);
+		I_Decoder->GetFrame(0, &I_Frame);
+		IWICFormatConverter* Converter = nullptr;
+		g_WIC_factory->CreateFormatConverter(&Converter);
+		Converter->Initialize(I_Frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
+		g_WIC_factory->CreateBitmapFromSource(Converter, WICBitmapCacheOnLoad, &Image.Bitmap);
+		UINT width1 = 0, height1 = 0;
+		width1 = width;
+		height1 = height;
+		if (width != 0 && height != 0) {
+			Image.width = width;
+			Image.height = height;
+		}
+		else if (width == 0 && height == 0) {
+			Image.Bitmap->GetSize(&width1, &height1);
+			Image.width = width1;
+			Image.height = height1;
+		}
+		else if (width == 0 && height != 0) {
+			Image.Bitmap->GetSize(&width1, &height1);
+			Image.width = width1;
+			Image.height = height;
+		}
+		else if (width != 0 && height == 0) {
+			Image.Bitmap->GetSize(&width1, &height1);
+			Image.height = height1;
+			Image.width = width;
+		}
+		I_Frame->Release();
+		I_Decoder->Release();
+		Converter->Release();
 	}
-	void XSF_DrawBMP(struct XSF_Window& window, HBITMAP hBmp, int x, int y) {
-		if(window.hwnd != nullptr){
-			HDC dc = window.UBD ? window.hMemDC : GetDC(window.hwnd);
-			HDC hMemDC = CreateCompatibleDC(dc);
-			HBITMAP hOldBmp = (HBITMAP)SelectObject(hMemDC, hBmp);
-			BITMAP img;
-			GetObject(hBmp, sizeof(BITMAP), &img);
-			int w = img.bmWidth;
-			int h = img.bmHeight;
-			BitBlt(dc,x,y,w,h,hMemDC,0,0,SRCCOPY);
-			SelectObject(hMemDC, hOldBmp);
-			DeleteDC(hMemDC);
-			if (!window.UBD) {
-				ReleaseDC(window.hwnd, dc);
-			}
+	void XSF_DrawImage(XSF_Image Image, float x, float y,XSF_Render& render) {
+		if (render.RT != nullptr) {
+			ID2D1Bitmap* Bitmap = nullptr;
+			render.RT->CreateBitmapFromWicBitmap(Image.Bitmap, nullptr, &Bitmap);
+				render.RT->BeginDraw();
+				if (Bitmap) {
+					render.RT->DrawBitmap(Bitmap, D2D1::RectF(x, y, x + Image.width, y + Image.height));
+				}
+				render.RT->EndDraw();
+			Bitmap->Release();
+			Bitmap = nullptr;
+		}
+	}
+	void XSF_UnLoadImage(XSF_Image& Image) {
+		if (Image.Bitmap != nullptr) {
+			Image.Bitmap->Release();
+			Image.Bitmap = nullptr;
+			Image.width = 0;
+			Image.height = 0;
 		}
 	}
 	void XSF_SetColor(COLORREF color) {
 		g_DCR = color;
-	}
-	void XSF_UnLoadBMP(HBITMAP hBmp[], int s) {
-		if (hBmp != nullptr && s > 0) {
-			for (int i = 0; i < s; i++) {
-				DeleteObject(hBmp[i]);
-			}
-		}
 	}
 	void XSF_PlayWAV(const WCHAR* fp, bool l) {
 		if (l) {

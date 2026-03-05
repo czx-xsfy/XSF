@@ -15,7 +15,9 @@ namespace XSF {
 		window.length = length;
 		window.height = height;
 		window.name = name;
-		window.hwnd = CreateWindowEx(0, L"WindowC", window.name.c_str(), WS_OVERLAPPEDWINDOW, 50, 50, window.length, window.height, NULL, NULL, GetModuleHandle(NULL), NULL);
+		RECT wrc = { 0, 0, window.length, window.height };
+		AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, FALSE);
+		window.hwnd = CreateWindowEx(0, L"WindowC", window.name.c_str(), WS_OVERLAPPEDWINDOW, 50, 50, wrc.right - wrc.left, wrc.bottom - wrc.top, NULL, NULL, GetModuleHandle(NULL), NULL);
 		ShowWindow(window.hwnd, SW_SHOW);
 		UpdateWindow(window.hwnd);
 	}
@@ -24,7 +26,9 @@ namespace XSF {
 		window.height = height;
 		if (window.hwnd != NULL)
 		{
-			SetWindowPos(window.hwnd, NULL, 50, 50, 50 + window.length, 50 + window.height, SWP_NOZORDER | SWP_SHOWWINDOW);
+			RECT wrc = { 0, 0, window.length, window.height };
+			AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, FALSE);
+			SetWindowPos(window.hwnd, NULL, 50, 50, wrc.right - wrc.left, wrc.bottom - wrc.top, SWP_NOZORDER | SWP_SHOWWINDOW);
 		}
 
 	}

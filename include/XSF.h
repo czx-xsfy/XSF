@@ -1,12 +1,45 @@
 #pragma once
 #include <wincodec.h>
 #include <string>
-#include<Windows.h>
+#include<windows.h>
 #include <mmsystem.h>
 #include <d2d1.h>
+#include<optional>
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "d2d1.lib")
 namespace XSF {
+	enum XSF_MessageType {
+		XSF_OK,
+		XSF_OKCancel,
+		XSF_AbortRetryIgnore,
+		XSF_YesNO,
+		XSF_YesNoCancel,
+		XSF_RetryCancel,
+		XSF_CancelTryContinue
+	};
+	enum XSF_Language
+	{
+		XSF_LANG_SYSTEM = 0,
+		XSF_LANG_CHS = MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED),
+		XSF_LANG_CHT = MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL),
+		XSF_LANG_EN_US = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+		XSF_LANG_EN_UK = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_UK),
+		XSF_LANG_FRENCH = MAKELANGID(LANG_FRENCH, SUBLANG_FRENCH),
+		XSF_LANG_GREEK = MAKELANGID(LANG_GREEK, SUBLANG_DEFAULT),
+		XSF_LANG_GERMAN = MAKELANGID(LANG_GERMAN, SUBLANG_GERMAN)
+	};
+	enum XSF_MessageReturn {
+		XSF_ReturnNone,
+		XSF_ReturnOK,
+		XSF_ReturnCancel,
+		XSF_ReturnAbort,
+		XSF_ReturnRetry,
+		XSF_ReturnIgnore,
+		XSF_ReturnYes,
+		XSF_ReturnNo,
+		XSF_ReturnTryAgain,
+		XSF_ReturnContinue,
+	};
 	struct XSF_Window
 	{
 		int length = 0;
@@ -114,7 +147,8 @@ namespace XSF {
 		XSF_MOUSE_NONE,
 		XSF_MOUSE_LEFT,
 		XSF_MOUSE_RIGHT,
-		XSF_MOUSE_MIDDLE
+		XSF_MOUSE_MIDDLE,
+		XSF_MOUSE_BLCLK
 	};
 	struct XSF_Event {
 		XSF_EventType type = XSF_EVENT_NONE;
@@ -146,16 +180,19 @@ namespace XSF {
 	void XSF_DrawSolidEllipse(int x, int y, int rx, int ry, XSF_Window& window);
 	void XSF_DrawPolygon(POINT* points, int n, struct XSF_Window& window);
 	void XSF_DrawSolidPolygon(POINT* points, int n, struct XSF_Window& window);
-	void XSF_LoadImage(const WCHAR* fp, float width, float height, XSF_Image& Image);
+	void XSF_LoadImage(std::wstring fp, float width, float height, XSF_Image& Image);
 	void XSF_DrawImage(XSF_Image Image, float x, float y, XSF_Render& render);
 	void XSF_SetColor(COLORREF color);
 	void XSF_UnLoadImage(XSF_Image& Image);
-	void XSF_PlayWAV(const WCHAR* fp, bool l);
+	void XSF_PlayWAV(std::wstring fp, bool l);
 	void XSF_StopSound();
-	void XSF_DrawText(const WCHAR* text, int x, int y, struct XSF_Window& window);
+	void XSF_DrawText(std::wstring text, int x, int y, struct XSF_Window& window);
+	void XSF_SetFont(std::wstring font);
+	void XSF_DestroyFont();
 	void XSF_DoubleBufferBegin(struct XSF_Window& window);
 	void XSF_DoubleBufferFlip(struct XSF_Window& window);
-	void XSF_Init(); 
-	void XSF_UnInit();
+	void XSF_Image_Init(); 
+	void XSF_Image_UnInit();
 	void XSF_Render_Init(XSF_Window window, XSF_Render& render);
+	int XSF_MessageBox(std::optional<XSF_Window>& window, std::wstring text, std::wstring caption, int message_type, int language);
 }

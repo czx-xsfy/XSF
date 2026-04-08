@@ -1,9 +1,10 @@
-﻿#include "pch.h"
-#include "framework.h"
+﻿#include"pch.h"
+#include"framework.h"
 #include "XSF.h"
 namespace XSF {
 	IWICImagingFactory* g_WIC_factory = nullptr;
 	COLORREF g_DCR = RGB(0, 0, 0);
+	HFONT g_hFont = nullptr;
 	void XSF_Window_Init() {
 		WNDCLASS windowc = { 0 };
 		windowc.lpfnWndProc = XSF_WindowProc;
@@ -40,7 +41,7 @@ namespace XSF {
 		}
 		DestroyWindow(window.hwnd);
 	}
-	void XSF_Init() {
+	void XSF_Image_Init() {
 		CoInitialize(NULL);
 		CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&g_WIC_factory));
 	}
@@ -62,7 +63,7 @@ namespace XSF {
 			&render.RT
 		);
 	}
-	void XSF_UnInit() {
+	void XSF_Image_UnInit() {
 		if (g_WIC_factory != nullptr) {
 			g_WIC_factory->Release();
 			g_WIC_factory = nullptr;
@@ -608,6 +609,12 @@ namespace XSF {
 		case WM_PAINT:
 			ValidateRect(hWnd, NULL);
 			break;
+		case WM_LBUTTONDBLCLK:
+			g_event.type = XSF_EVENT_MOUSE_DOWN;
+			g_event.mousex = LOWORD(lParam);
+			g_event.mousey = HIWORD(lParam);
+			g_event.mouse = XSF_MOUSE_BLCLK;
+			break;
 		default:
 			break;
 		}
@@ -778,10 +785,10 @@ namespace XSF {
 			}
 		}
 	}
-	void XSF_LoadImage(const WCHAR* fp,float width,float height,XSF_Image& Image) {
+	void XSF_LoadImage(std::wstring fp,float width,float height,XSF_Image& Image) {
 		IWICBitmapDecoder* I_Decoder = nullptr;
 		IWICBitmapFrameDecode* I_Frame = nullptr;
-		g_WIC_factory->CreateDecoderFromFilename(fp, NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &I_Decoder);
+		g_WIC_factory->CreateDecoderFromFilename(fp.c_str(), NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &I_Decoder);
 		I_Decoder->GetFrame(0, &I_Frame);
 		IWICFormatConverter* Converter = nullptr;
 		g_WIC_factory->CreateFormatConverter(&Converter);
@@ -837,26 +844,49 @@ namespace XSF {
 	void XSF_SetColor(COLORREF color) {
 		g_DCR = color;
 	}
-	void XSF_PlayWAV(const WCHAR* fp, bool l) {
+	void XSF_PlayWAV(std::wstring fp, bool l) {
 		if (l) {
-			PlaySound(fp, NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
+			PlaySound(fp.c_str(), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
 		}
 		else {
-			PlaySound(fp, NULL, SND_FILENAME | SND_ASYNC);
+			PlaySound(fp.c_str(), NULL, SND_FILENAME | SND_ASYNC);
 		}
 	}
 	void XSF_StopSound() {
 		PlaySound(NULL, NULL, SND_PURGE);
 	}
-	void XSF_DrawText(const WCHAR* text, int x, int y,struct XSF_Window& window) {
+	void XSF_DrawText(std::wstring text, int x, int y,struct XSF_Window& window) {
 		if (window.hwnd != nullptr) {
 			HDC dc = window.UBD ? window.hMemDC : GetDC(window.hwnd);
 			COLORREF oldColor = SetTextColor(dc, g_DCR);
-			TextOut(dc, x, y, text, lstrlen(text));
+			HFONT hOldFont = (HFONT)SelectObject(dc, g_hFont);
+			TextOut(dc, x, y, text.c_str(), text.size());
 			SetTextColor(dc, oldColor);
+			SelectObject(dc, hOldFont);
 			if (!window.UBD) {
 				ReleaseDC(window.hwnd, dc);
 			}
+		}
+	}
+	void XSF_SetFont(std::wstring font) {
+		if (g_hFont == nullptr) {
+			g_hFont = CreateFontW(
+				0, 0, 0, 0, FW_NORMAL,
+				FALSE, FALSE, FALSE,
+				GB2312_CHARSET,
+				OUT_DEFAULT_PRECIS,
+				CLIP_DEFAULT_PRECIS,
+				DEFAULT_QUALITY,
+				DEFAULT_PITCH | FF_DONTCARE,
+				font.c_str()
+			);
+		}
+	}
+
+	void XSF_DestroyFont() {
+		if (g_hFont != nullptr) {
+			DeleteObject(g_hFont);
+			g_hFont = nullptr;
 		}
 	}
 	void XSF_DoubleBufferBegin(struct XSF_Window& window) {
@@ -881,5 +911,9 @@ namespace XSF {
 		int height = clientRect.bottom - clientRect.top;
 		BitBlt(hdc,0, 0,width, height,window.hMemDC,0, 0,SRCCOPY);
 		ReleaseDC(window.hwnd, hdc);
+	}
+	int XSF_MessageBox(std::optional<XSF_Window> window, std::wstring text, std::wstring caption, int message_type, int language) {
+		HWND hwnd = window.has_value() ? window->hwnd : nullptr;
+		return MessageBoxEx(hwnd, text.c_str(), caption.c_str(), message_type, language);
 	}
 }

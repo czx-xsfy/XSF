@@ -1,49 +1,88 @@
-# XSF 轻量多媒体窗口库
+# XSF — 轻量多媒体窗口库
 
-一个面向 Windows 的轻量多媒体窗口工具库，支持窗口创建、双缓冲绘图、基础交互及音视频资源操作，适合快速开发小型图形化应用。
+面向 Windows 的轻量级 C++ 图形与多媒体窗口库，提供窗口管理、双缓冲绘图、基本图形/文本绘制、图片加载与 WAV 播放、以及键盘/鼠标事件轮询。适合快速开发小型图形化工具与教学示例。
 
-
-## 项目目录结构
+## 目录结构
 
 ```
 XSF/
-├─ docs/           # 文档资料（可选：设计说明、接口细节等）
-├─ example/        # 示例程序（可直接编译运行，演示核心功能）
-├─ include/        # 头文件目录（对外暴露的接口，开发者需包含此目录）
-├─ lib/            # 编译产物（静态库/动态库，含 Debug/Release 版本）
-│  ├─ Debug/       # 调试版库文件
-│  └─ Release/     # 发布版库文件
-├─ src/            # 源代码目录（开源核心，包含所有模块实现）
-├─ LICENSE         # 开源协议文件（BSD-3-Clause 协议）
-└─ README.md       # 项目说明文档（当前文件）
+├─ docs/           # 文档资料（可选）
+├─ example/        # 示例程序
+├─ include/        # 对外头文件（XSF.h）
+├─ lib/            # 编译产物（Debug/Release）
+├─ src/            # 源代码实现（XSF.cpp）
+├─ LICENSE         # BSD-3-Clause 许可
+└─ README.md       # 本文件
 ```
 
+## 快速开始
+1) 在项目中添加包含目录：`XSF/include`，并链接 `XSF.lib`（或将 XSF 源直接加入工程）。
 
-## 核心信息
+2) 最小示例：
 
-### 1. 功能概述
-- 窗口管理：创建、调整、关闭窗口，支持双缓冲绘图环境
-- 图形绘制：直线、矩形、圆、椭圆、多边形等基础图形（空心/实心）
-- 资源操作：加载/绘制 BMP 图片，播放/停止 WAV 音频
-- 事件响应：键盘、鼠标事件监听（按下/松开/移动等）
-- 文本绘制：支持宽字符文本在窗口指定位置绘制
+```cpp
+#include "XSF.h"
+using namespace XSF;
+
+int main(){
+    XSF_Init();
+    XSF_Window w;
+    XSF_Window_Create(800,600,L"XSF 示例", w);
+
+    XSF_Event ev;
+    while(true){
+        while(XSF_PollEvent(ev)){
+            if(ev.type==XSF_EVENT_CLOSE) goto _exit;
+        }
+        XSF_DoubleBufferBegin(w);
+        // 绘制示例
+        XSF_SetColor(RGB(255,0,0));
+        XSF_DrawRect(10,10,200,100,w);
+        XSF_DrawText(L"Hello XSF", 20, 20, w);
+        XSF_DoubleBufferFlip(w);
+    }
+_exit:
+    XSF_Window_Close(w);
+    XSF_UnInit();
+    return 0;
+}
+```
+
+详细 API 参考请见 docs/index.html
+
+## API 概览（位于 include/XSF.h）
+
+主要类型：
+- XSF::XSF_Window — 窗口与双缓冲句柄集合
+- XSF::XSF_Event — 事件结构（键盘 / 鼠标 / 关闭）
+- XSF::XSF_Image — 图片句柄（IWICBitmap）
+- XSF::XSF_Render — D2D 渲染目标封装
+
+主要函数：
+- XSF_Init(), XSF_UnInit() — 全局初始化/反初始化
+- XSF_Window_Init() — 窗口系统初始化
+- XSF_Window_Create/Modify/Close — 窗口管理
+- XSF_PollEvent(XSF_Event&) — 轮询事件
+- XSF_DoubleBufferBegin/XSF_DoubleBufferFlip — 双缓冲操作
+- 绘图：XSF_DrawRect / XSF_DrawSolidRect / XSF_DrawCircle / XSF_DrawSolidCircle / XSF_DrawLine / XSF_DrawEllipse / XSF_DrawSolidEllipse / XSF_DrawPolygon / XSF_DrawSolidPolygon
+- 图像：XSF_LoadImage(const WCHAR* fp, float width, float height, XSF_Image& Image) / XSF_DrawImage(XSF_Image Image, float x, float y, XSF_Render& render) / XSF_UnLoadImage(XSF_Image& Image)
+- 音频：XSF_PlayWAV(const WCHAR* fp, bool loop) / XSF_StopSound()
+- 文本：XSF_DrawText(const WCHAR* text, int x, int y, XSF_Window& window)
+- 颜色：XSF_SetColor(COLORREF color)
+- 渲染初始化：XSF_Render_Init(XSF_Window window, XSF_Render& render)
+
+详见 include/XSF.h 中的函数与枚举（如 XSF_EventType、XSF_Key、XSF_MouseButton）。
+
+## 构建（简要）
+- Visual Studio：新建 Win32/Windows 桌面项目，配置 x64 平台，添加 include 目录并链接 d2d1.lib、winmm.lib 和 XSF.lib。
+- MinGW：将 src/ 下代码编译为静态库并链接所需系统库（视 MinGW 环境而定）。
+
+## 示例与调试
+- example/ 中包含若干示例程序，建议先编译并运行以熟悉接口。
+
+## 许可
+本项目采用 BSD-3-Clause 许可证（详见 LICENSE）。
 
 
-### 2. 环境要求
-- 操作系统：Windows 7 及以上（64位）
-- 开发工具：Visual Studio 2015+ 或 MinGW-w64（支持 C++11 及以上标准）
-- 编译目标：仅支持 x64（64位）平台
-
-
-### 3. 快速使用
-1. 项目配置：
-   - 附加包含目录：`XSF/include`
-   - 附加库目录：`XSF/lib/Debug` 或 `XSF/lib/Release`（按需选择）
-   - 附加依赖项：`XSF.lib`（静态库）
-
-2. 示例参考：
-   直接编译 `example/` 目录下的示例程序，快速了解核心接口用法。
-
-
-### 4. 协议说明
-详细开源协议请参见项目根目录下的 `LICENSE` 文件（BSD-3-Clause 协议）。
+---
+如需更详细的 API 文档或把 README 转为 docs/ 下的更完整文档，可再提要求.

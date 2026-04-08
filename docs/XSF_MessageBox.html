@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="style.css">
+  <title>XSF_MessageBox</title>
+</head>
+<body>
+  <div class="container">    <p><a href="index.html">返回索引</a></p>
+    <h1>XSF_MessageBox</h1>
+    <pre>int XSF_MessatBox(std::optional&lt;XSF_Window&gt; window, std::wstring text, std::wstring caption, int message_type, int language)</pre>
+    <p>MessageBoxEx 的轻量封装。实现中的函数名为 XSF_MessatBox；文档中使用 MessageBox 为更直观的命名。可传入 optional 窗口作为父窗口句柄；返回 MessageBoxEx 的返回码。</p>
+    <h2>示例</h2>
+    <pre>int rc = XSF_MessatBox(std::nullopt, L"确认退出？", L"提示", MB_OKCANCEL, XSF_LANG_SYSTEM);</pre>
+  </div>
+</body>
+</html>
+

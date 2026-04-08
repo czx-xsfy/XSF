@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>XSF_Window</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">    <p><a href="index.html">返回索引</a></p>
+    <h1>XSF_Window</h1>
+    <pre>struct XSF_Window { int length; int height; std::wstring name; HWND hwnd; HDC hMemDC; HBITMAP hbmp; HBITMAP holdbmp; bool UBD; };</pre>
+    <h2>字段说明</h2>
+    <ul>
+      <li><strong>length, height</strong>：窗口客户区尺寸（像素）。</li>
+      <li><strong>name</strong>：窗口标题（宽字符串）。</li>
+      <li><strong>hwnd</strong>：Win32 窗口句柄（HWND）。</li>
+      <li><strong>hMemDC</strong>：双缓冲时的内存设备上下文（HDC）。</li>
+      <li><strong>hbmp</strong>：兼容位图句柄，用于双缓冲。</li>
+      <li><strong>holdbmp</strong>：保存的原始位图句柄（恢复用）。</li>
+      <li><strong>UBD</strong>：双缓冲标志（1=已启用）。</li>
+    </ul>
+  </div>
+</body>
+</html>
+

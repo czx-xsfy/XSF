@@ -13,6 +13,5 @@ void XSF_DrawSolidPolygon(POINT* points, int n, XSF_Window& window)
 ```cpp {% raw %}
 POINT pts[4] = {{10,10},{120,10},{120,120},{10,120}};
 XSF_DrawSolidPolygon(pts,4,w);
-```
 {% endraw %}
 

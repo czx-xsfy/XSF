@@ -13,5 +13,5 @@ void XSF_DrawPolygon(POINT* points, int n, XSF_Window& window)
 ```cpp
 POINT pts[3] = {{10,10},{100,10},{50,80}};
 XSF_DrawPolygon(pts, 3, w);
-```cpp
+```
 
